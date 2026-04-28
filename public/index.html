@@ -262,8 +262,8 @@
             <aside class="sidebar" id="sidebar">
                 <div class="sidebar-header">
                     <svg class="sidebar-logo" viewBox="0 0 400 240" fill="none">
-                        <text x="55" y="135" font-family="monospace" font-weight="bold" font-size="90" fill="var(--primary, #d4a017)">{</text>
-                        <text x="295" y="135" font-family="monospace" font-weight="bold" font-size="90" fill="var(--primary, #d4a017)">}</text>
+                        <text x="55" y="135" font-family="monospace" font-weight="bold" font-size="90" fill="#d4a017">{</text>
+                        <text x="295" y="135" font-family="monospace" font-weight="bold" font-size="90" fill="#d4a017">}</text>
                         <rect x="120" y="165" width="160" height="6" rx="3" fill="#b8860b" opacity="0.6"/>
                         <rect x="135" y="175" width="130" height="6" rx="3" fill="#b8860b" opacity="0.4"/>
                         <rect x="150" y="185" width="100" height="6" rx="3" fill="#b8860b" opacity="0.2"/>
@@ -401,7 +401,6 @@
         setRandomQuote();
 
         // ========== LOGIN / LOGOUT ==========
-        const API = 'http://localhost:3000';
         function enterDashboard() {
             const nameInput = document.getElementById('nameInput');
             const name = nameInput.value.trim();
@@ -427,14 +426,12 @@
             document.getElementById('login-screen').style.display = 'flex';
             document.getElementById('login-screen').style.opacity = '1';
             document.getElementById('nameInput').value = '';
-            // Reset active tab
             document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
             document.querySelector('.nav-item[data-tab="chat"]').classList.add('active');
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
             document.getElementById('tab-chat').classList.add('active');
         }
 
-        // Check for existing login
         window.addEventListener('load', () => {
             const savedName = localStorage.getItem('karombe-user');
             if (savedName) {
@@ -481,6 +478,12 @@
             document.getElementById('sidebar').classList.toggle('open');
         });
 
+        // ========== API HELPER ==========
+        // Relative path – works on localhost and on Render
+        function api(path) {
+            return window.location.origin + path;
+        }
+
         // ========== CHAT ==========
         function addMessage(role, content, timestamp = 'just now') {
             const chatArea = document.getElementById('chatArea');
@@ -512,7 +515,7 @@
             input.value = '';
             showTyping();
             try {
-                const res = await fetch(`${API}/api/chat`, {
+                const res = await fetch(api('/api/chat'), {
                     method: 'POST',
                     headers: {'Content-Type':'application/json'},
                     body: JSON.stringify({ message: text })
@@ -533,7 +536,7 @@
             const text = textarea.value.trim();
             if (!text) return alert('Please enter some knowledge.');
             try {
-                const res = await fetch(`${API}/api/ingest`, {
+                const res = await fetch(api('/api/ingest'), {
                     method: 'POST',
                     headers: {'Content-Type':'application/json'},
                     body: JSON.stringify({ text })
@@ -549,7 +552,7 @@
         async function loadKnowledge() {
             const container = document.getElementById('knowledgeList');
             try {
-                const res = await fetch(`${API}/api/knowledge`);
+                const res = await fetch(api('/api/knowledge'));
                 const data = await res.json();
                 if (!data.knowledge || data.knowledge.length === 0) {
                     container.innerHTML = '<p style="color:var(--text-light);">No knowledge stored yet.</p>';
@@ -570,7 +573,7 @@
         async function loadMemory() {
             const container = document.getElementById('memoryDisplay');
             try {
-                const res = await fetch(`${API}/api/memory`);
+                const res = await fetch(api('/api/memory'));
                 const data = await res.json();
                 if (!data.memory || data.memory.length === 0) {
                     container.innerHTML = '<p style="color:var(--text-light);">No conversation memory.</p>';
