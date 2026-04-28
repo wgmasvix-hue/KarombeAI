@@ -2,20 +2,29 @@
 const fs = require('fs');
 const path = require('path');
 require('dotenv').config();
-const lancedb = require('vectordb');
+
+// ---- Optional dependencies (may not be installed on Render) ----
+let lancedb;
+try {
+    lancedb = require('vectordb');
+} catch (e) {
+    console.warn('⚠️ vectordb not available – knowledge base disabled');
+    lancedb = null;
+}
 
 const PORT = process.env.PORT || 3000;
 const PUBLIC_DIR = path.join(__dirname, 'public');
 const MEMORY_FILE = path.join(__dirname, 'memory.json');
 const DB_PATH = path.join(__dirname, 'karombe-lancedb');
 
-// ======== ALLOWED ORIGINS (add your domains) ========
+// ---- Allowed CORS origins ----
 const ALLOWED_ORIGINS = [
     'https://karombe.chengetai.co.zw',
-    'https://dare.chengetai.co.zw'   // if you want to embed the widget there
+    'https://dare.chengetai.co.zw',
+    'https://karombe.onrender.com'  // for testing
 ];
 
-// ======== LONG-TERM CHAT MEMORY ========
+// ---- Long‑term chat memory ----
 let conversationHistory = [];
 
 function loadMemory() {
@@ -40,29 +49,26 @@ function saveMemory() {
     }
 }
 
-function trimMemory(maxMessages = 40) {
-    if (conversationHistory.length > maxMessages) {
-        conversationHistory = conversationHistory.slice(-maxMessages);
-    }
-}
-
-// Helper: read request body
+// ---- Request helpers ----
 function getRequestBody(req) {
     return new Promise((resolve, reject) => {
         let body = '';
-        req.on('data', chunk => body += chunk);
+        req.on('data', chunk => (body += chunk));
         req.on('end', () => resolve(body));
         req.on('error', reject);
     });
 }
 
-// Helper: serve static files
 function serveStaticFile(res, filePath) {
     const extname = path.extname(filePath);
     const contentType = {
-        '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css',
-        '.json': 'application/json', '.png': 'image/png', '.jpg': 'image/jpeg',
-        '.gif': 'image/gif'
+        '.html': 'text/html',
+        '.js': 'text/javascript',
+        '.css': 'text/css',
+        '.json': 'application/json',
+        '.png': 'image/png',
+        '.jpg': 'image/jpeg',
+        '.gif': 'image/gif',
     }[extname] || 'application/octet-stream';
 
     fs.readFile(filePath, (err, data) => {
@@ -76,51 +82,82 @@ function serveStaticFile(res, filePath) {
     });
 }
 
-// ======== VECTOR DB + EMBEDDING ========
+// ---- Vector DB (optional) ----
 let db, table;
 
 async function initVectorDB() {
-    db = await lancedb.connect(DB_PATH);
-    const tables = await db.tableNames();
-    if (!tables.includes('knowledge')) {
-        table = await db.createTable('knowledge', [
-            { vector: [], text: '', source: '' }
-        ]);
-        console.log('📚 Created new knowledge base table.');
-    } else {
-        table = await db.openTable('knowledge');
-        console.log('📚 Opened existing knowledge base.');
+    if (!lancedb) {
+        console.log('📚 Knowledge base disabled (vectordb missing).');
+        table = {
+            search: async () => [],
+            add: async () => {},
+            execute: async () => [],
+        };
+        return;
+    }
+    try {
+        db = await lancedb.connect(DB_PATH);
+        const tables = await db.tableNames();
+        if (!tables.includes('knowledge')) {
+            table = await db.createTable('knowledge', [
+                { vector: [], text: '', source: '' }
+            ]);
+            console.log('📚 Created new knowledge base table.');
+        } else {
+            table = await db.openTable('knowledge');
+            console.log('📚 Opened existing knowledge base.');
+        }
+    } catch (err) {
+        console.error('⚠ Vector DB init failed – knowledge base disabled:', err.message);
+        table = { search: async () => [], add: async () => {}, execute: async () => [] };
     }
 }
 
 async function addToKnowledge(text, source = 'user') {
-    const embedding = await getEmbedding(text);
-    await table.add([{ vector: embedding, text, source }]);
+    try {
+        if (!lancedb) return;
+        const embedding = await getEmbedding(text);
+        await table.add([{ vector: embedding, text, source }]);
+    } catch (err) {
+        console.error('Knowledge add failed:', err.message);
+        throw err;
+    }
 }
 
 async function searchKnowledge(query, topK = 3) {
-    const queryEmbedding = await getEmbedding(query);
-    const results = await table.search(queryEmbedding).limit(topK).execute();
-    return results.map(r => r.text);
+    if (!lancedb) return [];
+    try {
+        const queryEmbedding = await getEmbedding(query);
+        const results = await table.search(queryEmbedding).limit(topK).execute();
+        return results.map(r => r.text);
+    } catch (err) {
+        console.warn('Knowledge search skipped:', err.message);
+        return [];
+    }
 }
 
 async function getEmbedding(text) {
-    // Ollama must be running locally with nomic-embed-text model
+    // Ollama embedding – will throw if Ollama is unreachable
     const resp = await fetch('http://localhost:11434/api/embeddings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: 'nomic-embed-text', prompt: text })
+        body: JSON.stringify({ model: 'nomic-embed-text', prompt: text }),
     });
+    if (!resp.ok) throw new Error('Ollama embedding failed');
     const data = await resp.json();
     return data.embedding;
 }
 
 async function getAllKnowledge() {
-    const results = await table.execute();
-    return results;
+    if (!lancedb) return [];
+    try {
+        return await table.execute();
+    } catch {
+        return [];
+    }
 }
 
-// ======== CORS Middleware ========
+// ---- CORS middleware ----
 function setCORSHeaders(req, res) {
     const origin = req.headers.origin;
     if (ALLOWED_ORIGINS.includes(origin)) {
@@ -131,9 +168,8 @@ function setCORSHeaders(req, res) {
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 }
 
-// ======== MAIN SERVER ========
+// ---- Main server ----
 const server = http.createServer(async (req, res) => {
-    // Apply CORS
     setCORSHeaders(req, res);
     if (req.method === 'OPTIONS') {
         res.writeHead(204);
@@ -141,7 +177,7 @@ const server = http.createServer(async (req, res) => {
         return;
     }
 
-    // ---- INGEST ----
+    // Ingestion endpoint
     if (req.method === 'POST' && req.url === '/api/ingest') {
         try {
             const body = await getRequestBody(req);
@@ -158,12 +194,12 @@ const server = http.createServer(async (req, res) => {
         return;
     }
 
-    // ---- LIST KNOWLEDGE ----
+    // List knowledge
     if (req.method === 'GET' && req.url === '/api/knowledge') {
         try {
             const all = await getAllKnowledge();
             res.writeHead(200, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ knowledge: all.map(row => ({ text: row.text, source: row.source })) }));
+            res.end(JSON.stringify({ knowledge: all.map(r => ({ text: r.text, source: r.source })) }));
         } catch (err) {
             res.writeHead(500, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ error: 'Could not fetch knowledge.' }));
@@ -171,7 +207,7 @@ const server = http.createServer(async (req, res) => {
         return;
     }
 
-    // ---- CLEAR MEMORY ----
+    // Clear memory
     if (req.method === 'POST' && req.url === '/api/clear-memory') {
         conversationHistory = [];
         saveMemory();
@@ -180,14 +216,14 @@ const server = http.createServer(async (req, res) => {
         return;
     }
 
-    // ---- GET MEMORY ----
+    // Get memory
     if (req.method === 'GET' && req.url === '/api/memory') {
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ memory: conversationHistory }));
         return;
     }
 
-    // ---- CHAT ----
+    // Chat endpoint
     if (req.method === 'POST' && req.url === '/api/chat') {
         try {
             const body = await getRequestBody(req);
@@ -195,13 +231,13 @@ const server = http.createServer(async (req, res) => {
 
             conversationHistory.push({ role: 'user', content: message });
 
-            // RAG: search knowledge
+            // RAG context (gracefully fails if Ollama/DB missing)
             let context = '';
             try {
                 const results = await searchKnowledge(message, 3);
                 if (results.length > 0) context = results.join('\n---\n');
             } catch (e) {
-                console.warn('Knowledge search failed:', e.message);
+                console.warn('Knowledge search failed – continuing without context:', e.message);
             }
 
             const systemPrompt = {
@@ -213,6 +249,7 @@ ${context ? 'Use the following retrieved knowledge to inform your answer, but on
             };
 
             const messages = [systemPrompt, ...conversationHistory];
+            // Keep memory within limits
             if (conversationHistory.length > 40) conversationHistory = conversationHistory.slice(-40);
 
             const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -229,6 +266,7 @@ ${context ? 'Use the following retrieved knowledge to inform your answer, but on
 
             const data = await response.json();
             const reply = data.choices?.[0]?.message?.content || 'No reply from model';
+
             conversationHistory.push({ role: 'assistant', content: reply });
             saveMemory();
 
@@ -242,7 +280,7 @@ ${context ? 'Use the following retrieved knowledge to inform your answer, but on
         return;
     }
 
-    // ---- SERVE STATIC FILES ----
+    // Serve static files
     let filePath = path.join(PUBLIC_DIR, req.url === '/' ? 'index.html' : req.url);
     serveStaticFile(res, filePath);
 });
@@ -252,6 +290,6 @@ ${context ? 'Use the following retrieved knowledge to inform your answer, but on
     await initVectorDB();
     server.listen(PORT, () => {
         console.log(`✅ Server running at http://localhost:${PORT}`);
-        console.log('   🦁 Karombe AI (Groq + knowledge base + long-term memory)');
+        console.log('   🦁 Karombe AI (Groq + optional knowledge base)');
     });
 })();
