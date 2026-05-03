@@ -1,594 +1,728 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Karombe AI</title>
-    <style>
-        :root {
-            --primary: #d4a017;
-            --primary-dark: #b8860b;
-            --sidebar-bg: #2f2418;
-            --sidebar-text: #e6d5b8;
-            --bg: #fefaf0;
-            --surface: rgba(255,255,255,0.85);
-            --glass: rgba(255,255,255,0.65);
-            --text: #3e2e1f;
-            --text-light: #6b5b4b;
-            --border: rgba(212,160,23,0.25);
-            --radius: 24px;
-            --shadow: 0 25px 50px -12px rgba(0,0,0,0.15);
-            --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .dark {
-            --sidebar-bg: #1a1812;
-            --bg: #2c271c;
-            --surface: rgba(30,28,20,0.9);
-            --glass: rgba(30,28,20,0.7);
-            --text: #f0e2c8;
-            --text-light: #b8a88c;
-            --border: rgba(212,160,23,0.4);
-        }
-        * { margin:0; padding:0; box-sizing:border-box; }
-        body {
-            font-family: 'Inter', system-ui, -apple-system, sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            transition: background var(--transition), color var(--transition);
-            height: 100vh;
-            overflow: hidden;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Karombe AI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..700&display=swap" rel="stylesheet" />
+  <style>
+    /* ========== CSS Variables & Theme ========== */
+    :root {
+      --primary: #d4a017;
+      --primary-dark: #b8860b;
+      --sidebar-bg: #2f2418;
+      --sidebar-text: #e6d5b8;
+      --bg: #fefaf0;
+      --surface: rgba(255,255,255,0.72);
+      --glass: rgba(255,255,255,0.55);
+      --text: #3e2e1f;
+      --text-light: #6b5b4b;
+      --border: rgba(212,160,23,0.2);
+      --radius: 24px;
+      --shadow: 0 25px 50px -12px rgba(0,0,0,0.12);
+      --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      --bg-animation: none;
+    }
+    .dark {
+      --sidebar-bg: #1a1812;
+      --bg: #2c271c;
+      --surface: rgba(30,28,20,0.9);
+      --glass: rgba(30,28,20,0.7);
+      --text: #f0e2c8;
+      --text-light: #b8a88c;
+      --border: rgba(212,160,23,0.4);
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      transition: background var(--transition), color var(--transition);
+      height: 100vh;
+      overflow: hidden;
+      position: relative;
+    }
+    body::before {
+      content: '';
+      position: fixed;
+      top: -50%; left: -50%;
+      width: 200%; height: 200%;
+      background: radial-gradient(circle at 30% 20%, rgba(212,160,23,0.1), transparent 50%),
+                  radial-gradient(circle at 70% 80%, rgba(180,130,10,0.08), transparent 50%);
+      z-index: -1;
+      animation: bgShift 24s infinite alternate ease-in-out;
+    }
+    @keyframes bgShift {
+      0% { transform: translate(0,0) scale(1); }
+      100% { transform: translate(2%, -2%) scale(1.05); }
+    }
 
-        /* LOGIN SCREEN */
-        #login-screen {
-            background: #0f0f0f;
-            background-image: radial-gradient(ellipse at center, rgba(212,160,23,0.08) 0%, transparent 70%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            color: white;
-            position: absolute;
-            width: 100%;
-            z-index: 200;
-            transition: opacity 0.5s ease;
-        }
-        .login-container { text-align: center; animation: fadeUp 0.8s ease; }
-        @keyframes fadeUp { from { opacity:0; transform:translateY(24px); } to { opacity:1; transform:translateY(0); } }
-        .login-logo { width: 260px; margin: 0 auto 1rem; filter: drop-shadow(0 0 16px rgba(212,160,23,0.4)); }
-        .login-card {
-            background: rgba(255,255,255,0.06);
-            backdrop-filter: blur(30px);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 32px;
-            padding: 3rem 2.5rem 2.5rem;
-            max-width: 420px;
-            width: 90%;
-            margin: 0 auto;
-            box-shadow: 0 30px 60px rgba(0,0,0,0.5);
-        }
-        .login-card h1 { font-size: 2rem; font-weight: 700; margin-bottom: 0.3rem; }
-        .tagline { color: #a0a0a0; font-size: 0.95rem; margin-bottom: 2rem; }
-        .input-group { margin-bottom: 1.8rem; }
-        .input-group input {
-            width: 100%; padding: 1rem 1.2rem;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 16px;
-            font-size: 1rem; color: white; outline: none;
-            text-align: center;
-            transition: border 0.3s, box-shadow 0.3s;
-        }
-        .input-group input:focus { border-color: var(--primary); box-shadow: 0 0 20px rgba(212,160,23,0.3); }
-        .input-group input::placeholder { color: #888; }
-        .btn {
-            width: 100%; padding: 1rem;
-            background: var(--primary);
-            color: #1a1812; font-weight: 700; font-size: 1rem;
-            border: none; border-radius: 16px;
-            cursor: pointer; transition: all 0.3s;
-        }
-        .btn:hover { background: #e5b81a; box-shadow: 0 10px 28px rgba(212,160,23,0.3); transform: translateY(-1px); }
-        .btn:active { transform: scale(0.98); }
-        .login-footer { margin-top: 1.5rem; color: #a0a0a0; font-size: 0.8rem; }
-        .login-footer a { color: var(--primary); text-decoration: none; }
-        .shake { animation: shake 0.3s ease; }
-        @keyframes shake {
-            0%,100% { transform: translateX(0); }
-            25% { transform: translateX(-6px); }
-            75% { transform: translateX(6px); }
-        }
+    /* ========== LOGIN SCREEN ========== */
+    #login-screen {
+      background: #0f0f0f;
+      background-image: radial-gradient(ellipse at center, rgba(212,160,23,0.08) 0%, transparent 70%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      color: white;
+      position: absolute;
+      width: 100%;
+      z-index: 200;
+      transition: opacity 0.5s ease, visibility 0s 0.5s;
+    }
+    #login-screen.hidden { opacity: 0; visibility: hidden; }
+    .login-container { text-align: center; animation: fadeUp 0.8s ease; }
+    @keyframes fadeUp { from { opacity:0; transform:translateY(24px); } to { opacity:1; transform:translateY(0); } }
+    .login-logo { width: 240px; margin: 0 auto 1.2rem; filter: drop-shadow(0 0 16px rgba(212,160,23,0.4)); }
+    .login-card {
+      background: rgba(255,255,255,0.06);
+      backdrop-filter: blur(30px);
+      -webkit-backdrop-filter: blur(30px);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 32px;
+      padding: 3rem 2.5rem 2.5rem;
+      max-width: 420px;
+      width: 90%;
+      margin: 0 auto;
+      box-shadow: 0 30px 60px rgba(0,0,0,0.5);
+    }
+    .login-card h1 { font-size: 2rem; font-weight: 700; margin-bottom: 0.3rem; }
+    .tagline { color: #a0a0a0; font-size: 0.95rem; margin-bottom: 2rem; }
+    .input-group { margin-bottom: 1.8rem; }
+    .input-group input {
+      width: 100%; padding: 1rem 1.2rem;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 16px;
+      font-size: 1rem; color: white; outline: none;
+      text-align: center;
+      transition: border 0.3s, box-shadow 0.3s;
+    }
+    .input-group input:focus { border-color: var(--primary); box-shadow: 0 0 20px rgba(212,160,23,0.3); }
+    .input-group input::placeholder { color: #888; }
+    .btn {
+      width: 100%; padding: 1rem;
+      background: var(--primary);
+      color: #1a1812; font-weight: 700; font-size: 1rem;
+      border: none; border-radius: 16px;
+      cursor: pointer; transition: all 0.3s;
+      position: relative; overflow: hidden;
+    }
+    .btn:hover { background: #e5b81a; box-shadow: 0 10px 28px rgba(212,160,23,0.3); transform: translateY(-1px); }
+    .btn:active { transform: scale(0.98); }
+    .login-footer { margin-top: 1.5rem; color: #a0a0a0; font-size: 0.8rem; }
+    .login-footer a { color: var(--primary); text-decoration: none; }
+    .shake { animation: shake 0.3s ease; }
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      25% { transform: translateX(-6px); }
+      75% { transform: translateX(6px); }
+    }
+    .spinner {
+      display: inline-block; width: 18px; height: 18px;
+      border: 2px solid rgba(0,0,0,0.2); border-top-color: #1a1812;
+      border-radius: 50%; animation: spin 0.6s linear infinite;
+      margin-right: 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* MAIN DASHBOARD (hidden initially) */
-        #app { display: none; height: 100vh; }
-        .sidebar {
-            width: 280px; background: var(--sidebar-bg); backdrop-filter: blur(20px);
-            display: flex; flex-direction: column;
-            border-right: 1px solid var(--border); z-index: 100;
-            transition: transform 0.4s ease; flex-shrink: 0;
-        }
-        .sidebar-header { padding: 2rem 1.5rem 1rem; text-align: center; }
-        .sidebar-logo { width: 200px; margin: 0 auto; display: block; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2)); }
-        .sidebar-nav { flex:1; padding: 1.5rem 1rem; display: flex; flex-direction: column; gap: 0.5rem; }
-        .nav-item {
-            color: var(--sidebar-text); padding: 0.85rem 1rem; border-radius: 14px;
-            cursor: pointer; display: flex; align-items: center; gap: 0.8rem;
-            font-weight: 500; transition: all 0.2s; border: 1px solid transparent;
-        }
-        .nav-item:hover { background: rgba(212,160,23,0.1); border-color: rgba(212,160,23,0.3); color: #fff; }
-        .nav-item.active { background: var(--primary); color: #1a1812; font-weight: 600; border-color: var(--primary-dark); box-shadow: 0 8px 20px rgba(212,160,23,0.25); }
-        .sidebar-footer { padding: 1rem 1.5rem; border-top: 1px solid var(--border); text-align: center; font-size: 0.8rem; opacity: 0.8; }
-        .sidebar-footer span { color: var(--primary); font-weight: 600; display: block; }
-        .user-info { margin-top: 0.5rem; font-size: 0.75rem; }
-        .logout-link { color: var(--primary); cursor: pointer; text-decoration: underline; }
+    /* ========== MAIN DASHBOARD ========== */
+    #app { display: none; height: 100vh; }
+    .sidebar {
+      width: 280px; background: var(--sidebar-bg); backdrop-filter: blur(20px);
+      display: flex; flex-direction: column;
+      border-right: 1px solid var(--border); z-index: 100;
+      transition: transform 0.4s ease; flex-shrink: 0;
+    }
+    .sidebar-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+      z-index: 99; backdrop-filter: blur(2px); transition: opacity 0.3s;
+    }
+    .sidebar-header { padding: 2rem 1.5rem 1rem; text-align: center; }
+    .sidebar-logo { width: 200px; margin: 0 auto; display: block; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2)); }
+    .dark .sidebar-logo text:last-of-type { fill: #f0e2c8; }
+    .sidebar-nav { flex:1; padding: 1.5rem 1rem; display: flex; flex-direction: column; gap: 0.5rem; }
+    .nav-item {
+      color: var(--sidebar-text); padding: 0.85rem 1rem; border-radius: 14px;
+      cursor: pointer; display: flex; align-items: center; gap: 0.8rem;
+      font-weight: 500; transition: all 0.2s; border: 1px solid transparent;
+      background: transparent;
+    }
+    .nav-item:hover { background: rgba(212,160,23,0.1); border-color: rgba(212,160,23,0.3); color: #fff; }
+    .nav-item.active { background: var(--primary); color: #1a1812; font-weight: 600; border-color: var(--primary-dark); box-shadow: 0 8px 20px rgba(212,160,23,0.25); }
+    .sidebar-footer { padding: 1rem 1.5rem; border-top: 1px solid var(--border); text-align: center; font-size: 0.8rem; opacity: 0.8; color: var(--sidebar-text); }
+    .sidebar-footer .powered { color: var(--primary); font-weight: 600; display: block; }
+    .user-info { margin-top: 0.5rem; font-size: 0.75rem; }
+    .logout-link { color: var(--primary); cursor: pointer; text-decoration: underline; }
 
-        .main { flex:1; display: flex; flex-direction: column; overflow: hidden; }
-        .top-bar {
-            padding: 0.9rem 2rem; display: flex; align-items: center; gap: 1rem;
-            background: var(--surface); backdrop-filter: blur(15px);
-            border-bottom: 1px solid var(--border); z-index: 10;
-        }
-        .menu-toggle { display:none; background:none; border:none; font-size:1.8rem; cursor:pointer; color:var(--text); }
-        .dashboard-title { font-weight: 700; font-size: 1.3rem; }
-        .mode-toggle { margin-left: auto; cursor: pointer; font-size: 1.4rem; background:none; border:none; }
+    .main { flex:1; display: flex; flex-direction: column; overflow: hidden; }
+    .top-bar {
+      padding: 0.9rem 2rem; display: flex; align-items: center; gap: 1rem;
+      background: var(--surface); backdrop-filter: blur(15px);
+      border-bottom: 1px solid var(--border); z-index: 10;
+    }
+    .menu-toggle { display:none; background:none; border:none; font-size:1.8rem; cursor:pointer; color:var(--text); }
+    .dashboard-title { font-weight: 700; font-size: 1.3rem; display: flex; align-items: center; gap: 0.4rem; }
+    .mode-toggle { margin-left: auto; cursor: pointer; font-size: 1.4rem; background:none; border:none; }
 
-        .tab-content { flex:1; overflow-y: auto; padding: 2rem; display: none; animation: fadeSlide 0.35s ease; }
-        .tab-content.active { display: block; }
-        @keyframes fadeSlide { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+    .tab-content { flex:1; overflow-y: auto; padding: 2rem; display: none; animation: fadeSlide 0.35s ease; }
+    .tab-content.active { display: block; }
+    @keyframes fadeSlide { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
 
-        .card {
-            background: var(--surface); backdrop-filter: blur(20px);
-            border-radius: var(--radius); padding: 1.8rem;
-            box-shadow: var(--shadow); border: 1px solid var(--border);
-            margin-bottom: 1.8rem;
-        }
-        .chat-area {
-            background: var(--glass); backdrop-filter: blur(10px);
-            border-radius: var(--radius); padding: 1.5rem; height: 60vh;
-            overflow-y: auto; display: flex; flex-direction: column; gap: 1rem;
-            margin-bottom: 1.2rem; border: 1px solid var(--border);
-        }
-        .message {
-            max-width: 80%; padding: 0.9rem 1.2rem; border-radius: 1.5rem;
-            line-height: 1.5; animation: messageIn 0.25s ease; position: relative;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.04); word-break: break-word;
-        }
-        .message.user { align-self: flex-end; background: var(--primary); color: #1a1812; border-bottom-right-radius: 0.4rem; }
-        .message.assistant { align-self: flex-start; background: #f5e7d3; color: var(--text); border-bottom-left-radius: 0.4rem; }
-        .message .time { font-size: 0.7rem; opacity: 0.65; margin-top: 0.3rem; display: block; text-align: right; }
-        @keyframes messageIn { from { opacity:0; transform:translateY(8px) scale(0.98); } to { opacity:1; transform:translateY(0) scale(1); } }
-        .typing-indicator {
-            align-self: flex-start; background: #f5e7d3; padding: 0.8rem 1.2rem;
-            border-radius: 1.5rem; display: flex; gap: 6px;
-        }
-        .typing-indicator span {
-            width: 8px; height: 8px; background: var(--primary); border-radius: 50%;
-            animation: bounce 1.4s infinite ease-in-out; display: block;
-        }
-        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
-        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
-        @keyframes bounce {
-            0%,80%,100% { transform: scale(0.6); opacity:0.4; }
-            40% { transform: scale(1); opacity:1; }
-        }
-        .input-row { display: flex; gap: 0.6rem; }
-        .input-row input, .input-row textarea {
-            flex:1; padding: 0.9rem 1.2rem; border-radius: 2rem;
-            border: 1px solid var(--border); background: var(--surface);
-            font-size: 0.95rem; outline: none;
-            transition: border 0.2s, box-shadow 0.2s;
-        }
-        .input-row input:focus, .input-row textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(212,160,23,0.25); }
-        .btn {
-            background: var(--primary); color: #1a1812; font-weight: 600;
-            border: none; border-radius: 2rem; padding: 0.9rem 2.2rem;
-            cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 0.3rem;
-        }
-        .btn:hover { background: var(--primary-dark); color: white; box-shadow: 0 10px 20px rgba(212,160,23,0.2); }
-        .btn-outline {
-            background: transparent; border: 2px solid var(--primary);
-            color: var(--primary); font-weight: 600; border-radius: 2rem;
-            padding: 0.7rem 1.8rem; cursor: pointer; transition: all 0.2s;
-        }
-        .btn-outline:hover { background: var(--primary); color: #1a1812; }
-        .knowledge-item, .memory-item {
-            background: var(--glass); backdrop-filter: blur(5px);
-            padding: 0.9rem 1.2rem; border-radius: 16px; margin-bottom: 0.8rem;
-            display: flex; justify-content: space-between; align-items: center;
-            border: 1px solid var(--border); transition: background 0.2s;
-        }
-        .memory-item .role-badge { background: var(--primary); color: #1a1812; font-size: 0.7rem; font-weight: 700; padding: 0.2rem 0.5rem; border-radius: 8px; margin-right: 0.5rem; }
-        .time-stamp { font-size: 0.75rem; opacity: 0.6; }
-        .app-footer {
-            background: var(--surface); backdrop-filter: blur(15px);
-            border-top: 1px solid var(--border); padding: 0.9rem 2rem;
-            display: flex; justify-content: space-between; align-items: center;
-            flex-wrap: wrap; font-size: 0.9rem; color: var(--text-light); z-index: 5;
-        }
-        .footer-quote { font-style: italic; display: flex; align-items: center; gap: 0.5rem; }
-        .refresh-quote { background: none; border: none; cursor: pointer; font-size: 1.2rem; opacity: 0.7; transition: transform 0.3s, opacity 0.2s; color: var(--primary); }
-        .refresh-quote:hover { opacity: 1; transform: rotate(180deg); }
-        .footer-signature { font-weight: 600; color: var(--primary); display: flex; align-items: center; gap: 0.3rem; }
+    .card {
+      background: var(--surface); backdrop-filter: blur(20px);
+      border-radius: var(--radius); padding: 1.8rem;
+      box-shadow: var(--shadow); border: 1px solid var(--border);
+      margin-bottom: 1.8rem; transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .card:hover { box-shadow: 0 30px 60px -12px rgba(0,0,0,0.2); }
 
-        @media (max-width: 768px) {
-            .sidebar { position: fixed; left:0; top:0; height:100%; transform: translateX(-100%); width: 80%; max-width: 300px; }
-            .sidebar.open { transform: translateX(0); }
-            .menu-toggle { display: block; }
-            .app-footer { flex-direction: column; gap: 0.5rem; text-align: center; }
-        }
-    </style>
+    .chat-area {
+      background: var(--glass); backdrop-filter: blur(10px);
+      border-radius: var(--radius); padding: 1.5rem; height: 62vh;
+      overflow-y: auto; display: flex; flex-direction: column; gap: 1rem;
+      margin-bottom: 1.2rem; border: 1px solid var(--border);
+    }
+    .message {
+      max-width: 82%; padding: 0.9rem 1.2rem; border-radius: 1.5rem;
+      line-height: 1.5; animation: messageIn 0.25s ease; position: relative;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.04); word-break: break-word;
+    }
+    .message.user { align-self: flex-end; background: var(--primary); color: #1a1812; border-bottom-right-radius: 0.4rem; }
+    .message.assistant { align-self: flex-start; background: #f5e7d3; color: var(--text); border-bottom-left-radius: 0.4rem; }
+    .message .time { font-size: 0.7rem; opacity: 0.65; margin-top: 0.3rem; display: block; text-align: right; }
+    @keyframes messageIn { from { opacity:0; transform:translateY(8px) scale(0.98); } to { opacity:1; transform:translateY(0) scale(1); } }
+    .typing-indicator {
+      align-self: flex-start; background: #f5e7d3; padding: 0.8rem 1.2rem;
+      border-radius: 1.5rem; display: flex; gap: 6px;
+    }
+    .typing-indicator span {
+      width: 8px; height: 8px; background: var(--primary); border-radius: 50%;
+      animation: bounce 1.4s infinite ease-in-out; display: block;
+    }
+    .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes bounce {
+      0%,80%,100% { transform: scale(0.6); opacity:0.4; }
+      40% { transform: scale(1); opacity:1; }
+    }
+    .input-row { display: flex; gap: 0.6rem; align-items: flex-end; }
+    .input-row textarea {
+      flex:1; padding: 0.9rem 1.2rem; border-radius: 24px;
+      border: 1px solid var(--border); background: var(--surface);
+      font-size: 0.95rem; outline: none; resize: none;
+      transition: border 0.2s, box-shadow 0.2s;
+      font-family: inherit;
+    }
+    .input-row textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(212,160,23,0.25); }
+    .btn {
+      background: var(--primary); color: #1a1812; font-weight: 600;
+      border: none; border-radius: 24px; padding: 0.9rem 2.2rem;
+      cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 0.3rem;
+      white-space: nowrap;
+    }
+    .btn:hover { background: var(--primary-dark); color: white; box-shadow: 0 10px 20px rgba(212,160,23,0.2); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-outline {
+      background: transparent; border: 2px solid var(--primary);
+      color: var(--primary); font-weight: 600; border-radius: 24px;
+      padding: 0.7rem 1.8rem; cursor: pointer; transition: all 0.2s;
+    }
+    .btn-outline:hover { background: var(--primary); color: #1a1812; }
+
+    .knowledge-item, .memory-item {
+      background: var(--glass); backdrop-filter: blur(5px);
+      padding: 0.9rem 1.2rem; border-radius: 16px; margin-bottom: 0.8rem;
+      display: flex; justify-content: space-between; align-items: center;
+      border: 1px solid var(--border); transition: background 0.2s;
+    }
+    .knowledge-item:hover { background: var(--surface); }
+    .memory-item .role-badge { background: var(--primary); color: #1a1812; font-size: 0.7rem; font-weight: 700; padding: 0.2rem 0.5rem; border-radius: 8px; margin-right: 0.5rem; }
+    .time-stamp { font-size: 0.75rem; opacity: 0.6; }
+
+    .app-footer {
+      background: var(--surface); backdrop-filter: blur(15px);
+      border-top: 1px solid var(--border); padding: 0.9rem 2rem;
+      display: flex; justify-content: space-between; align-items: center;
+      flex-wrap: wrap; font-size: 0.9rem; color: var(--text-light); z-index: 5;
+    }
+    .footer-quote { font-style: italic; display: flex; align-items: center; gap: 0.5rem; max-width: 70%; }
+    .refresh-quote { background: none; border: none; cursor: pointer; font-size: 1.2rem; opacity: 0.7; transition: transform 0.3s, opacity 0.2s; color: var(--primary); }
+    .refresh-quote:hover { opacity: 1; transform: rotate(180deg); }
+    .footer-signature { font-weight: 600; color: var(--primary); display: flex; align-items: center; gap: 0.3rem; }
+
+    /* Toast */
+    .toast-container {
+      position: fixed; bottom: 2rem; right: 2rem; z-index: 300;
+      display: flex; flex-direction: column; gap: 0.5rem;
+    }
+    .toast {
+      background: var(--primary); color: #1a1812; padding: 0.9rem 1.5rem;
+      border-radius: 14px; box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+      animation: toastIn 0.3s ease; font-weight: 500; max-width: 300px;
+    }
+    @keyframes toastIn { from { opacity:0; transform:translateX(30px); } to { opacity:1; transform:translateX(0); } }
+
+    /* Skeleton */
+    .skeleton { background: linear-gradient(90deg, var(--glass) 25%, rgba(212,160,23,0.1) 50%, var(--glass) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 12px; height: 3rem; margin-bottom: 0.8rem; }
+    @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+    .empty-state { text-align: center; padding: 3rem 1rem; color: var(--text-light); }
+    .empty-state .icon { font-size: 3rem; margin-bottom: 0.5rem; }
+
+    /* Ripple effect */
+    .ripple { position: relative; overflow: hidden; }
+    .ripple::after {
+      content: ''; display: block; position: absolute; width: 100%; padding-top: 100%;
+      border-radius: 50%; background: rgba(255,255,255,0.3); transform: scale(0);
+      opacity: 1; pointer-events: none;
+    }
+    .ripple:active::after { animation: ripple 0.6s ease-out; }
+    @keyframes ripple { to { transform: scale(4); opacity: 0; } }
+
+    @media (max-width: 768px) {
+      .sidebar { position: fixed; left:0; top:0; height:100%; transform: translateX(-100%); width: 80%; max-width: 300px; }
+      .sidebar.open { transform: translateX(0); }
+      .sidebar-overlay { display: block; }
+      .menu-toggle { display: block; }
+      .app-footer { flex-direction: column; gap: 0.5rem; text-align: center; }
+      .footer-quote { max-width: 100%; }
+    }
+  </style>
 </head>
 <body>
-    <!-- LOGIN SCREEN -->
-    <div id="login-screen">
-        <div class="login-container">
-            <svg class="login-logo" viewBox="0 0 400 240" fill="none">
-                <text x="55" y="135" font-family="monospace" font-weight="bold" font-size="90" fill="#d4a017">{</text>
-                <text x="295" y="135" font-family="monospace" font-weight="bold" font-size="90" fill="#d4a017">}</text>
-                <rect x="120" y="165" width="160" height="6" rx="3" fill="#b8860b" opacity="0.6"/>
-                <rect x="135" y="175" width="130" height="6" rx="3" fill="#b8860b" opacity="0.4"/>
-                <rect x="150" y="185" width="100" height="6" rx="3" fill="#b8860b" opacity="0.2"/>
-                <g transform="translate(200,95)">
-                    <circle cx="0" cy="0" r="55" fill="#d4a017"/>
-                    <circle cx="0" cy="0" r="48" fill="#8b6914"/>
-                    <circle cx="-42" cy="-38" r="12" fill="#b8860b"/>
-                    <circle cx="42" cy="-38" r="12" fill="#b8860b"/>
-                    <ellipse cx="0" cy="5" rx="32" ry="28" fill="#f5e7d3"/>
-                    <ellipse cx="-12" cy="-2" rx="7" ry="9" fill="#3e2e1f"/>
-                    <ellipse cx="12" cy="-2" rx="7" ry="9" fill="#3e2e1f"/>
-                    <circle cx="-11" cy="-4" r="3" fill="white"/>
-                    <circle cx="13" cy="-4" r="3" fill="white"/>
-                    <path d="M-4 8 L0 12 L4 8 L-4 8Z" fill="#3e2e1f"/>
-                    <path d="M-6 12 Q0 20 6 12" stroke="#3e2e1f" stroke-width="2" fill="none"/>
-                </g>
-                <text x="200" y="225" text-anchor="middle" font-family="Arial, sans-serif" font-weight="800" font-size="26" letter-spacing="6" fill="#f0e2c8">KAROMBE</text>
-            </svg>
-            <div class="login-card">
-                <h1>Welcome back</h1>
-                <p class="tagline">Enter your name to continue</p>
-                <div class="input-group">
-                    <input type="text" id="nameInput" placeholder="Your name" autofocus onkeypress="if(event.key==='Enter') enterDashboard()" />
-                </div>
-                <button class="btn" onclick="enterDashboard()">Enter Karombe AI →</button>
-                <div class="login-footer">Powered by <a href="#">Chengetai Labs</a></div>
-            </div>
+  <!-- LOGIN SCREEN -->
+  <div id="login-screen">
+    <div class="login-container">
+      <svg class="login-logo" viewBox="0 0 400 240" fill="none">
+        <text x="55" y="135" font-family="monospace" font-weight="bold" font-size="90" fill="#d4a017">{</text>
+        <text x="295" y="135" font-family="monospace" font-weight="bold" font-size="90" fill="#d4a017">}</text>
+        <rect x="120" y="165" width="160" height="6" rx="3" fill="#b8860b" opacity="0.6"/>
+        <rect x="135" y="175" width="130" height="6" rx="3" fill="#b8860b" opacity="0.4"/>
+        <rect x="150" y="185" width="100" height="6" rx="3" fill="#b8860b" opacity="0.2"/>
+        <g transform="translate(200,95)">
+          <circle cx="0" cy="0" r="55" fill="#d4a017"/>
+          <circle cx="0" cy="0" r="48" fill="#8b6914"/>
+          <circle cx="-42" cy="-38" r="12" fill="#b8860b"/>
+          <circle cx="42" cy="-38" r="12" fill="#b8860b"/>
+          <ellipse cx="0" cy="5" rx="32" ry="28" fill="#f5e7d3"/>
+          <ellipse cx="-12" cy="-2" rx="7" ry="9" fill="#3e2e1f"/>
+          <ellipse cx="12" cy="-2" rx="7" ry="9" fill="#3e2e1f"/>
+          <circle cx="-11" cy="-4" r="3" fill="white"/>
+          <circle cx="13" cy="-4" r="3" fill="white"/>
+          <path d="M-4 8 L0 12 L4 8 L-4 8Z" fill="#3e2e1f"/>
+          <path d="M-6 12 Q0 20 6 12" stroke="#3e2e1f" stroke-width="2" fill="none"/>
+        </g>
+        <text x="200" y="225" text-anchor="middle" font-family="Arial, sans-serif" font-weight="800" font-size="26" letter-spacing="6" fill="#f0e2c8">KAROMBE</text>
+      </svg>
+      <div class="login-card">
+        <h1>Welcome back</h1>
+        <p class="tagline">Enter your name to continue</p>
+        <div class="input-group">
+          <input type="text" id="nameInput" placeholder="Your name" autofocus />
         </div>
+        <button class="btn ripple" id="loginBtn" onclick="enterDashboard()">Enter Karombe AI →</button>
+        <div class="login-footer">Made with ❤️ by <a href="#">Chengetai Labs</a></div>
+      </div>
     </div>
+  </div>
 
-    <!-- MAIN DASHBOARD APP -->
-    <div id="app">
-        <div style="display:flex; height:100%;">
-            <!-- Sidebar -->
-            <aside class="sidebar" id="sidebar">
-                <div class="sidebar-header">
-                    <svg class="sidebar-logo" viewBox="0 0 400 240" fill="none">
-                        <text x="55" y="135" font-family="monospace" font-weight="bold" font-size="90" fill="#d4a017">{</text>
-                        <text x="295" y="135" font-family="monospace" font-weight="bold" font-size="90" fill="#d4a017">}</text>
-                        <rect x="120" y="165" width="160" height="6" rx="3" fill="#b8860b" opacity="0.6"/>
-                        <rect x="135" y="175" width="130" height="6" rx="3" fill="#b8860b" opacity="0.4"/>
-                        <rect x="150" y="185" width="100" height="6" rx="3" fill="#b8860b" opacity="0.2"/>
-                        <g transform="translate(200,95)">
-                            <circle cx="0" cy="0" r="55" fill="#d4a017"/>
-                            <circle cx="0" cy="0" r="48" fill="#8b6914"/>
-                            <circle cx="-42" cy="-38" r="12" fill="#b8860b"/>
-                            <circle cx="42" cy="-38" r="12" fill="#b8860b"/>
-                            <ellipse cx="0" cy="5" rx="32" ry="28" fill="#f5e7d3"/>
-                            <ellipse cx="-12" cy="-2" rx="7" ry="9" fill="#3e2e1f"/>
-                            <ellipse cx="12" cy="-2" rx="7" ry="9" fill="#3e2e1f"/>
-                            <circle cx="-11" cy="-4" r="3" fill="white"/>
-                            <circle cx="13" cy="-4" r="3" fill="white"/>
-                            <path d="M-4 8 L0 12 L4 8 L-4 8Z" fill="#3e2e1f"/>
-                            <path d="M-6 12 Q0 20 6 12" stroke="#3e2e1f" stroke-width="2" fill="none"/>
-                        </g>
-                        <text x="200" y="225" text-anchor="middle" font-family="Arial, sans-serif" font-weight="800" font-size="26" letter-spacing="6" fill="#3e2e1f">KAROMBE</text>
-                    </svg>
-                </div>
-                <nav class="sidebar-nav">
-                    <div class="nav-item active" data-tab="chat">💬 Chat</div>
-                    <div class="nav-item" data-tab="knowledge">📚 Knowledge</div>
-                    <div class="nav-item" data-tab="memory">🧠 Memory</div>
-                    <div class="nav-item" data-tab="about">ℹ️ About</div>
-                </nav>
-                <div class="sidebar-footer">
-                    <span>Powered by</span>
-                    Chengetai Labs
-                    <div class="user-info" id="userInfoDisplay"></div>
-                    <div class="logout-link" onclick="logout()">↪ Not you? Log out</div>
-                </div>
-            </aside>
-
-            <!-- Main -->
-            <div class="main">
-                <div class="top-bar">
-                    <button class="menu-toggle" id="menuToggle">☰</button>
-                    <span class="dashboard-title">🦁 Karombe AI</span>
-                    <button class="mode-toggle" id="themeToggle">🌙</button>
-                </div>
-
-                <!-- Chat Tab -->
-                <div class="tab-content active" id="tab-chat">
-                    <div class="card">
-                        <h3 style="margin-bottom:1.2rem;">Chat with Karombe</h3>
-                        <div class="chat-area" id="chatArea">
-                            <div class="message assistant" id="welcomeMessage">
-                                🦁 Roar! I'm Karombe AI, powered by Chengetai Labs.
-                                <span class="time">just now</span>
-                            </div>
-                        </div>
-                        <div class="input-row">
-                            <input type="text" id="userInput" placeholder="Type your message..." onkeypress="if(event.key==='Enter') sendMessage()" />
-                            <button class="btn" onclick="sendMessage()">Send</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Knowledge Tab -->
-                <div class="tab-content" id="tab-knowledge">
-                    <div class="card">
-                        <h3>Ingest Knowledge</h3>
-                        <p style="margin-bottom:1rem; color:var(--text-light);">Teach Karombe new facts. They'll be used to answer future questions.</p>
-                        <div style="display:flex; flex-direction:column; gap:1rem;">
-                            <textarea id="knowledgeText" rows="3" placeholder="e.g., 'Karombe is a digital assistant from Zimbabwe...'"></textarea>
-                            <button class="btn" onclick="ingestKnowledge()">🧠 Add to Knowledge Base</button>
-                        </div>
-                    </div>
-                    <div class="card">
-                        <h3>Stored Knowledge</h3>
-                        <div id="knowledgeList">Loading...</div>
-                    </div>
-                </div>
-
-                <!-- Memory Tab -->
-                <div class="tab-content" id="tab-memory">
-                    <div class="card">
-                        <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <h3>Conversation Memory</h3>
-                            <button class="btn-outline" onclick="loadMemory()">🔄 Refresh</button>
-                        </div>
-                        <div id="memoryDisplay">Loading...</div>
-                    </div>
-                </div>
-
-                <!-- About Tab -->
-                <div class="tab-content" id="tab-about">
-                    <div class="card">
-                        <h3>About Karombe AI</h3>
-                        <p style="line-height:1.7;">🦁 <strong>Karombe AI</strong> is a wise, lion‑themed assistant developed by <strong>Chengetai Labs</strong>. Built with a full‑stack architecture, it combines a powerful language model (via Groq) with a local vector knowledge base for precise, contextual answers. This dashboard gives you full control: chat, train, and inspect memory — all wrapped in a modern glass‑morphism interface.</p>
-                        <p style="margin-top:1rem; font-style:italic;">“The wisdom of the lion, powered by innovation.”</p>
-                    </div>
-                </div>
-
-                <!-- Footer -->
-                <footer class="app-footer">
-                    <div class="footer-quote">
-                        <span id="quoteText">Loading wisdom...</span>
-                        <button class="refresh-quote" onclick="newQuote()">🔄</button>
-                    </div>
-                    <div class="footer-signature">🦁 Chengetai Labs</div>
-                </footer>
-            </div>
+  <!-- MAIN APP -->
+  <div id="app">
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    <div style="display:flex; height:100%;">
+      <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+          <svg class="sidebar-logo" viewBox="0 0 400 240" fill="none">
+            <text x="55" y="135" font-family="monospace" font-weight="bold" font-size="90" fill="#d4a017">{</text>
+            <text x="295" y="135" font-family="monospace" font-weight="bold" font-size="90" fill="#d4a017">}</text>
+            <rect x="120" y="165" width="160" height="6" rx="3" fill="#b8860b" opacity="0.6"/>
+            <rect x="135" y="175" width="130" height="6" rx="3" fill="#b8860b" opacity="0.4"/>
+            <rect x="150" y="185" width="100" height="6" rx="3" fill="#b8860b" opacity="0.2"/>
+            <g transform="translate(200,95)">
+              <circle cx="0" cy="0" r="55" fill="#d4a017"/>
+              <circle cx="0" cy="0" r="48" fill="#8b6914"/>
+              <circle cx="-42" cy="-38" r="12" fill="#b8860b"/>
+              <circle cx="42" cy="-38" r="12" fill="#b8860b"/>
+              <ellipse cx="0" cy="5" rx="32" ry="28" fill="#f5e7d3"/>
+              <ellipse cx="-12" cy="-2" rx="7" ry="9" fill="#3e2e1f"/>
+              <ellipse cx="12" cy="-2" rx="7" ry="9" fill="#3e2e1f"/>
+              <circle cx="-11" cy="-4" r="3" fill="white"/>
+              <circle cx="13" cy="-4" r="3" fill="white"/>
+              <path d="M-4 8 L0 12 L4 8 L-4 8Z" fill="#3e2e1f"/>
+              <path d="M-6 12 Q0 20 6 12" stroke="#3e2e1f" stroke-width="2" fill="none"/>
+            </g>
+            <text x="200" y="225" text-anchor="middle" font-family="Arial, sans-serif" font-weight="800" font-size="26" letter-spacing="6" fill="#3e2e1f">KAROMBE</text>
+          </svg>
         </div>
+        <nav class="sidebar-nav">
+          <div class="nav-item active" data-tab="chat">💬 Chat</div>
+          <div class="nav-item" data-tab="knowledge">📚 Knowledge</div>
+          <div class="nav-item" data-tab="memory">🧠 Memory</div>
+          <div class="nav-item" data-tab="about">ℹ️ About</div>
+        </nav>
+        <div class="sidebar-footer">
+          <span class="powered">Powered by</span>
+          Chengetai Labs
+          <div class="user-info" id="userInfoDisplay"></div>
+          <div class="logout-link" onclick="logout()">↪ Not you? Log out</div>
+        </div>
+      </aside>
+
+      <div class="main">
+        <div class="top-bar">
+          <button class="menu-toggle" id="menuToggle" aria-label="Menu">☰</button>
+          <span class="dashboard-title">🦁 Karombe AI</span>
+          <button class="mode-toggle" id="themeToggle" aria-label="Theme toggle">🌙</button>
+        </div>
+
+        <!-- Chat Tab -->
+        <div class="tab-content active" id="tab-chat">
+          <div class="card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.2rem;">
+              <h3>Chat with Karombe</h3>
+              <button class="btn-outline" onclick="clearChat()">🧹 Clear chat</button>
+            </div>
+            <div class="chat-area" id="chatArea">
+              <div class="message assistant" id="welcomeMessage">
+                🦁 Roar! I'm Karombe AI, ready to assist.
+                <span class="time">just now</span>
+              </div>
+            </div>
+            <div class="input-row">
+              <textarea id="userInput" rows="1" placeholder="Type your message... (Enter to send)" onkeydown="handleChatKey(event)"></textarea>
+              <button class="btn ripple" id="sendBtn" onclick="sendMessage()">Send</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Knowledge Tab -->
+        <div class="tab-content" id="tab-knowledge">
+          <div class="card">
+            <h3>Ingest Knowledge</h3>
+            <p style="margin:0.8rem 0 1.2rem; color:var(--text-light);">Teach Karombe new facts to use in conversations.</p>
+            <textarea id="knowledgeText" rows="3" placeholder="e.g., 'Karombe means lion in Shona...'" style="width:100%; margin-bottom:1rem;"></textarea>
+            <button class="btn ripple" id="ingestBtn" onclick="ingestKnowledge()">🧠 Add to Knowledge</button>
+          </div>
+          <div class="card">
+            <h3>Stored Knowledge</h3>
+            <div id="knowledgeList"><div class="skeleton"></div><div class="skeleton"></div></div>
+          </div>
+        </div>
+
+        <!-- Memory Tab -->
+        <div class="tab-content" id="tab-memory">
+          <div class="card">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <h3>Conversation Memory</h3>
+              <button class="btn-outline" id="refreshMemoryBtn" onclick="loadMemory()">🔄 Refresh</button>
+            </div>
+            <div id="memoryDisplay"><div class="skeleton"></div><div class="skeleton"></div></div>
+          </div>
+        </div>
+
+        <!-- About Tab -->
+        <div class="tab-content" id="tab-about">
+          <div class="card">
+            <h3>About Karombe AI</h3>
+            <p style="line-height:1.7;">🦁 <strong>Karombe AI</strong> is a wise, lion‑themed assistant crafted by <strong>Chengetai Labs</strong>. It combines powerful language AI with a custom knowledge engine, all wrapped in a modern, intuitive interface. This dashboard gives you full control: chat, train, and inspect memory — experience the future of AI assistance.</p>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="app-footer">
+          <div class="footer-quote" id="footerQuoteContainer">
+            <span id="quoteText">Loading wisdom...</span>
+            <button class="refresh-quote" onclick="newQuote()" aria-label="New quote">🔄</button>
+          </div>
+          <div class="footer-signature">🦁 Chengetai Labs</div>
+        </footer>
+      </div>
     </div>
+  </div>
 
-    <script>
-        // ========== DALE CARNEGIE QUOTES ==========
-        const quotes = [
-            "“Remember, happiness doesn’t depend upon who you are or what you have; it depends solely upon what you think.”",
-            "“It isn’t what you have or who you are or where you are or what you are doing that makes you happy or unhappy. It is what you think about it.”",
-            "“Most of the important things in the world have been accomplished by people who have kept on trying when there seemed to be no hope at all.”",
-            "“Develop success from failures. Discouragement and failure are two of the surest stepping stones to success.”",
-            "“When dealing with people, remember you are not dealing with creatures of logic, but creatures of emotion.”",
-            "“You can make more friends in two months by becoming interested in other people than you can in two years by trying to get other people interested in you.”",
-            "“Talk to someone about themselves and they’ll listen for hours.”",
-            "“The only way to get the best of an argument is to avoid it.”",
-            "“If you want to gather honey, don’t kick over the beehive.”",
-            "“Action breeds confidence and courage. If you want to conquer fear, do not sit home and think about it. Go out and get busy.”",
-            "“Our fatigue is often caused not by work, but by worry, frustration and resentment.”",
-            "“Take a chance! All life is a chance. The man who goes farthest is generally the one who is willing to do and dare.”",
-            "“Success is getting what you want. Happiness is wanting what you get.”",
-            "“Fear doesn’t exist anywhere except in the mind.”",
-            "“Don’t be afraid of enemies who attack you. Be afraid of the friends who flatter you.”"
-        ];
-        const quoteEl = document.getElementById('quoteText');
-        function setRandomQuote() {
-            const q = quotes[Math.floor(Math.random() * quotes.length)];
-            quoteEl.textContent = q;
-        }
-        function newQuote() {
-            quoteEl.style.opacity = 0;
-            setTimeout(() => { setRandomQuote(); quoteEl.style.opacity = 1; }, 200);
-        }
-        setRandomQuote();
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
 
-        // ========== LOGIN / LOGOUT ==========
-        function enterDashboard() {
-            const nameInput = document.getElementById('nameInput');
-            const name = nameInput.value.trim();
-            if (!name) {
-                nameInput.placeholder = 'Please enter your name';
-                nameInput.classList.add('shake');
-                setTimeout(() => nameInput.classList.remove('shake'), 400);
-                return;
-            }
-            localStorage.setItem('karombe-user', name);
-            document.getElementById('login-screen').style.opacity = '0';
-            setTimeout(() => {
-                document.getElementById('login-screen').style.display = 'none';
-                document.getElementById('app').style.display = 'block';
-                personalizeGreeting(name);
-                loadKnowledge();
-                loadMemory();
-            }, 500);
-        }
-        function logout() {
-            localStorage.removeItem('karombe-user');
-            document.getElementById('app').style.display = 'none';
-            document.getElementById('login-screen').style.display = 'flex';
-            document.getElementById('login-screen').style.opacity = '1';
-            document.getElementById('nameInput').value = '';
-            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-            document.querySelector('.nav-item[data-tab="chat"]').classList.add('active');
-            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-            document.getElementById('tab-chat').classList.add('active');
-        }
+  <script>
+    // ========== QUOTES & FOOTER ==========
+    const quotes = [
+      "“Remember, happiness doesn’t depend upon who you are or what you have; it depends solely upon what you think.”",
+      "“Most of the important things in the world have been accomplished by people who have kept on trying when there seemed to be no hope at all.”",
+      "“When dealing with people, remember you are not dealing with creatures of logic, but creatures of emotion.”",
+      "“You can make more friends in two months by becoming interested in other people than you can in two years by trying to get other people interested in you.”",
+      "“Action breeds confidence and courage. If you want to conquer fear, do not sit home and think about it. Go out and get busy.”",
+      "“Success is getting what you want. Happiness is wanting what you get.”",
+      "“Fear doesn’t exist anywhere except in the mind.”"
+    ];
+    const quoteEl = document.getElementById('quoteText');
+    function setRandomQuote() { quoteEl.textContent = quotes[Math.floor(Math.random() * quotes.length)]; }
+    function newQuote() { quoteEl.style.opacity = 0; setTimeout(() => { setRandomQuote(); quoteEl.style.opacity = 1; }, 200); }
+    setRandomQuote();
+    setInterval(setRandomQuote, 30000); // auto-rotate
 
-        window.addEventListener('load', () => {
-            const savedName = localStorage.getItem('karombe-user');
-            if (savedName) {
-                document.getElementById('login-screen').style.display = 'none';
-                document.getElementById('app').style.display = 'block';
-                personalizeGreeting(savedName);
-                loadKnowledge();
-                loadMemory();
-            }
+    // ========== TOAST SYSTEM ==========
+    function showToast(message, duration = 2500) {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.textContent = message;
+      container.appendChild(toast);
+      setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, duration);
+    }
+
+    // ========== LOGIN / LOGOUT ==========
+    function enterDashboard() {
+      const nameInput = document.getElementById('nameInput');
+      const name = nameInput.value.trim();
+      if (!name) {
+        nameInput.placeholder = 'Please enter your name';
+        nameInput.classList.add('shake');
+        setTimeout(() => nameInput.classList.remove('shake'), 400);
+        return;
+      }
+      const loginBtn = document.getElementById('loginBtn');
+      loginBtn.disabled = true;
+      loginBtn.innerHTML = '<span class="spinner"></span> Entering...';
+      setTimeout(() => {
+        localStorage.setItem('karombe-user', name);
+        document.getElementById('login-screen').classList.add('hidden');
+        document.getElementById('app').style.display = 'block';
+        personalizeGreeting(name);
+        loadKnowledge();
+        loadMemory();
+        loginBtn.disabled = false;
+        loginBtn.innerHTML = 'Enter Karombe AI →';
+      }, 300);
+    }
+    function logout() {
+      localStorage.removeItem('karombe-user');
+      document.getElementById('app').style.display = 'none';
+      document.getElementById('login-screen').classList.remove('hidden');
+      document.getElementById('nameInput').value = '';
+      document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+      document.querySelector('.nav-item[data-tab="chat"]').classList.add('active');
+      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+      document.getElementById('tab-chat').classList.add('active');
+    }
+
+    window.addEventListener('load', () => {
+      const savedName = localStorage.getItem('karombe-user');
+      if (savedName) {
+        document.getElementById('login-screen').classList.add('hidden');
+        document.getElementById('app').style.display = 'block';
+        personalizeGreeting(savedName);
+        loadKnowledge();
+        loadMemory();
+      }
+      // System theme
+      if (!localStorage.getItem('karombe-theme')) {
+        if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+          document.body.classList.add('dark');
+          document.getElementById('themeToggle').textContent = '☀️';
+        }
+      }
+    });
+
+    function personalizeGreeting(name) {
+      const welcome = document.getElementById('welcomeMessage');
+      if (welcome) welcome.innerHTML = `🦁 Roar, ${name}! I'm Karombe AI. Ask me anything! <span class="time">just now</span>`;
+      document.getElementById('userInfoDisplay').textContent = `Logged in as ${name}`;
+    }
+
+    // ========== THEME ==========
+    const themeToggle = document.getElementById('themeToggle');
+    themeToggle.addEventListener('click', () => {
+      document.body.classList.toggle('dark');
+      themeToggle.textContent = document.body.classList.contains('dark') ? '☀️' : '🌙';
+      localStorage.setItem('karombe-theme', document.body.classList.contains('dark') ? 'dark' : 'light');
+    });
+    if (localStorage.getItem('karombe-theme') === 'dark') {
+      document.body.classList.add('dark');
+      themeToggle.textContent = '☀️';
+    }
+
+    // ========== NAVIGATION & SIDEBAR ==========
+    document.querySelectorAll('.nav-item').forEach(item => {
+      item.addEventListener('click', () => {
+        document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+        item.classList.add('active');
+        const tab = item.dataset.tab;
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+        document.getElementById('tab-' + tab).classList.add('active');
+        if (tab === 'knowledge') loadKnowledge();
+        if (tab === 'memory') loadMemory();
+        // close mobile sidebar
+        document.getElementById('sidebar').classList.remove('open');
+      });
+    });
+
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    document.getElementById('menuToggle').addEventListener('click', () => sidebar.classList.toggle('open'));
+    overlay.addEventListener('click', () => sidebar.classList.remove('open'));
+
+    // ========== API HELPER ==========
+    function api(path) { return window.location.origin + path; }
+
+    // ========== CHAT ==========
+    function addMessage(role, content, timestamp = 'just now') {
+      const chatArea = document.getElementById('chatArea');
+      const msg = document.createElement('div');
+      msg.className = `message ${role}`;
+      msg.innerHTML = `${content.replace(/\n/g, '<br>')}<span class="time">${timestamp}</span>`;
+      chatArea.appendChild(msg);
+      chatArea.scrollTop = chatArea.scrollHeight;
+      return msg;
+    }
+    function showTyping() {
+      const typing = document.createElement('div');
+      typing.className = 'typing-indicator';
+      typing.innerHTML = '<span></span><span></span><span></span>';
+      typing.id = 'typingIndicator';
+      document.getElementById('chatArea').appendChild(typing);
+      document.getElementById('chatArea').scrollTop = document.getElementById('chatArea').scrollHeight;
+    }
+    function hideTyping() {
+      const typing = document.getElementById('typingIndicator');
+      if (typing) typing.remove();
+    }
+
+    function handleChatKey(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    }
+
+    async function sendMessage() {
+      const input = document.getElementById('userInput');
+      const text = input.value.trim();
+      if (!text) return;
+      const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      addMessage('user', text, time);
+      input.value = '';
+      input.style.height = 'auto';
+      showTyping();
+      document.getElementById('sendBtn').disabled = true;
+      try {
+        const res = await fetch(api('/api/chat'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: text })
         });
+        const data = await res.json();
+        hideTyping();
+        const reply = data.reply || 'No response';
+        addMessage('assistant', reply, new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+      } catch (e) {
+        hideTyping();
+        addMessage('assistant', '❌ Could not reach server.');
+      } finally {
+        document.getElementById('sendBtn').disabled = false;
+      }
+    }
 
-        function personalizeGreeting(name) {
-            const welcome = document.getElementById('welcomeMessage');
-            if (welcome) welcome.innerHTML = `🦁 Roar, ${name}! I'm Karombe AI, powered by Chengetai Labs. Ask me anything! <span class="time">just now</span>`;
-            const userInfo = document.getElementById('userInfoDisplay');
-            if (userInfo) userInfo.textContent = `Logged in as ${name}`;
-        }
+    async function clearChat() {
+      try {
+        await fetch(api('/api/memory'), { method: 'DELETE' });
+        document.getElementById('chatArea').innerHTML = '';
+        personalizeGreeting(localStorage.getItem('karombe-user') || 'friend');
+        showToast('Conversation cleared');
+      } catch (e) {
+        showToast('Failed to clear chat');
+      }
+    }
 
-        // ========== THEME & NAVIGATION ==========
-        const themeToggle = document.getElementById('themeToggle');
-        themeToggle.addEventListener('click', () => {
-            document.body.classList.toggle('dark');
-            themeToggle.textContent = document.body.classList.contains('dark') ? '☀️' : '🌙';
-            localStorage.setItem('karombe-theme', document.body.classList.contains('dark') ? 'dark' : 'light');
+    // Auto-resize textarea
+    document.getElementById('userInput').addEventListener('input', function() {
+      this.style.height = 'auto';
+      this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+    });
+
+    // ========== KNOWLEDGE ==========
+    async function ingestKnowledge() {
+      const textarea = document.getElementById('knowledgeText');
+      const text = textarea.value.trim();
+      if (!text) return showToast('Please enter some knowledge.');
+      const btn = document.getElementById('ingestBtn');
+      btn.disabled = true;
+      try {
+        const res = await fetch(api('/api/ingest'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text })
         });
-        if (localStorage.getItem('karombe-theme') === 'dark') {
-            document.body.classList.add('dark');
-            themeToggle.textContent = '☀️';
-        }
+        const data = await res.json();
+        showToast(data.status || 'Knowledge added!');
+        textarea.value = '';
+        loadKnowledge();
+      } catch (e) {
+        showToast('Error adding knowledge');
+      } finally {
+        btn.disabled = false;
+      }
+    }
 
-        document.querySelectorAll('.nav-item').forEach(item => {
-            item.addEventListener('click', () => {
-                document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-                item.classList.add('active');
-                const tab = item.dataset.tab;
-                document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-                document.getElementById('tab-' + tab).classList.add('active');
-                if (tab === 'knowledge') loadKnowledge();
-                if (tab === 'memory') loadMemory();
-            });
-        });
+    async function deleteKnowledge(index) {
+      try {
+        await fetch(api(`/api/knowledge/${index}`), { method: 'DELETE' });
+        showToast('Knowledge deleted');
+        loadKnowledge();
+      } catch (e) {
+        showToast('Delete failed');
+      }
+    }
 
-        document.getElementById('menuToggle').addEventListener('click', () => {
-            document.getElementById('sidebar').classList.toggle('open');
-        });
+    async function loadKnowledge() {
+      const container = document.getElementById('knowledgeList');
+      container.innerHTML = '<div class="skeleton"></div><div class="skeleton"></div>';
+      try {
+        const res = await fetch(api('/api/knowledge'));
+        const data = await res.json();
+        if (!data.knowledge || data.knowledge.length === 0) {
+          container.innerHTML = '<div class="empty-state"><div class="icon">📚</div><p>Your knowledge base is empty.</p></div>';
+          return;
+        }
+        container.innerHTML = data.knowledge.map((k, i) => `
+          <div class="knowledge-item">
+            <span>${k.text}</span>
+            <button class="btn-outline" style="padding:0.3rem 0.7rem; font-size:0.8rem;" onclick="deleteKnowledge(${i})">🗑️</button>
+          </div>
+        `).join('');
+      } catch (e) {
+        container.innerHTML = '<p>⚠️ Could not fetch knowledge.</p>';
+      }
+    }
 
-        // ========== API HELPER ==========
-        // Relative path – works on localhost and on Render
-        function api(path) {
-            return window.location.origin + path;
+    // ========== MEMORY ==========
+    async function loadMemory() {
+      const container = document.getElementById('memoryDisplay');
+      container.innerHTML = '<div class="skeleton"></div><div class="skeleton"></div>';
+      try {
+        const res = await fetch(api('/api/memory'));
+        const data = await res.json();
+        if (!data.memory || data.memory.length === 0) {
+          container.innerHTML = '<div class="empty-state"><div class="icon">🧠</div><p>No conversation history yet.</p></div>';
+          return;
         }
+        container.innerHTML = data.memory.map(m => {
+          const time = m.timestamp ? new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+          return `<div class="memory-item">
+            <span><span class="role-badge">${m.role}</span> ${m.content}</span>
+            <span class="time-stamp">${time}</span>
+          </div>`;
+        }).join('');
+      } catch (e) {
+        container.innerHTML = '<p>⚠️ Could not fetch memory.</p>';
+      }
+    }
 
-        // ========== CHAT ==========
-        function addMessage(role, content, timestamp = 'just now') {
-            const chatArea = document.getElementById('chatArea');
-            const msg = document.createElement('div');
-            msg.className = `message ${role}`;
-            msg.innerHTML = `${content}<span class="time">${timestamp}</span>`;
-            chatArea.appendChild(msg);
-            chatArea.scrollTop = chatArea.scrollHeight;
-            return msg;
-        }
-        function showTyping() {
-            const typing = document.createElement('div');
-            typing.className = 'typing-indicator';
-            typing.innerHTML = '<span></span><span></span><span></span>';
-            typing.id = 'typingIndicator';
-            document.getElementById('chatArea').appendChild(typing);
-            document.getElementById('chatArea').scrollTop = document.getElementById('chatArea').scrollHeight;
-        }
-        function hideTyping() {
-            const typing = document.getElementById('typingIndicator');
-            if (typing) typing.remove();
-        }
-        async function sendMessage() {
-            const input = document.getElementById('userInput');
-            const text = input.value.trim();
-            if (!text) return;
-            const time = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-            addMessage('user', text, time);
-            input.value = '';
-            showTyping();
-            try {
-                const res = await fetch(api('/api/chat'), {
-                    method: 'POST',
-                    headers: {'Content-Type':'application/json'},
-                    body: JSON.stringify({ message: text })
-                });
-                const data = await res.json();
-                hideTyping();
-                const reply = data.reply || 'No response';
-                addMessage('assistant', reply, new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}));
-            } catch(e) {
-                hideTyping();
-                addMessage('assistant', '❌ Could not reach server. Is it running?');
-            }
-        }
-
-        // ========== KNOWLEDGE ==========
-        async function ingestKnowledge() {
-            const textarea = document.getElementById('knowledgeText');
-            const text = textarea.value.trim();
-            if (!text) return alert('Please enter some knowledge.');
-            try {
-                const res = await fetch(api('/api/ingest'), {
-                    method: 'POST',
-                    headers: {'Content-Type':'application/json'},
-                    body: JSON.stringify({ text })
-                });
-                const data = await res.json();
-                alert(data.status || 'Knowledge added!');
-                textarea.value = '';
-                loadKnowledge();
-            } catch(e) {
-                alert('Error: Could not add knowledge.');
-            }
-        }
-        async function loadKnowledge() {
-            const container = document.getElementById('knowledgeList');
-            try {
-                const res = await fetch(api('/api/knowledge'));
-                const data = await res.json();
-                if (!data.knowledge || data.knowledge.length === 0) {
-                    container.innerHTML = '<p style="color:var(--text-light);">No knowledge stored yet.</p>';
-                    return;
-                }
-                container.innerHTML = data.knowledge.map(k => `
-                    <div class="knowledge-item">
-                        <span>${k.text}</span>
-                        <small style="opacity:0.7;">${k.source || 'user'}</small>
-                    </div>
-                `).join('');
-            } catch(e) {
-                container.innerHTML = '<p>⚠️ Could not fetch knowledge. Ensure /api/knowledge endpoint is active.</p>';
-            }
-        }
-
-        // ========== MEMORY ==========
-        async function loadMemory() {
-            const container = document.getElementById('memoryDisplay');
-            try {
-                const res = await fetch(api('/api/memory'));
-                const data = await res.json();
-                if (!data.memory || data.memory.length === 0) {
-                    container.innerHTML = '<p style="color:var(--text-light);">No conversation memory.</p>';
-                    return;
-                }
-                container.innerHTML = data.memory.map(m => `
-                    <div class="memory-item">
-                        <span><span class="role-badge">${m.role}</span> ${m.content}</span>
-                        <span class="time-stamp">${m.timestamp || ''}</span>
-                    </div>
-                `).join('');
-            } catch(e) {
-                container.innerHTML = '<p>⚠️ Could not fetch memory. Ensure /api/memory endpoint is active.</p>';
-            }
-        }
-    </script>
+    // ========== CLEAR CHAT ON MEMORY CLEAR (link) ==========
+    // Already handled by clearChat()
+  </script>
 </body>
 </html>
